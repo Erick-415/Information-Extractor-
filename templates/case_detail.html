@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{ case.case_number }} — {{ case.client_name or 'Unknown Client' }}</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #f5f6fa;
+      color: #1a1a2e;
+      min-height: 100vh;
+    }
+
+    header {
+      background: #1b3a6b;
+      color: white;
+      padding: 18px 32px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    header a { color: rgba(255,255,255,0.7); text-decoration: none; font-size: 0.9rem; }
+    header a:hover { color: white; }
+    header .sep { color: rgba(255,255,255,0.3); }
+    header h1 { font-size: 1.1rem; font-weight: 600; }
+
+    .container { max-width: 1000px; margin: 0 auto; padding: 32px 24px; }
+
+    /* ── TOP BAR ── */
+    .top-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 28px;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+    .case-ids h2 { font-size: 1.5rem; color: #1b3a6b; }
+    .case-ids .matter { font-size: 0.9rem; color: #888; margin-top: 4px; }
+
+    /* ── STATUS UPDATE FORM ── */
+    .status-form {
+      background: white;
+      border-radius: 10px;
+      padding: 16px 20px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.07);
+      min-width: 280px;
+    }
+    .status-form label { font-size: 0.78rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: #888; display: block; margin-bottom: 6px; }
+    .status-form select, .status-form textarea {
+      width: 100%;
+      padding: 8px 12px;
+      border: 1.5px solid #e0e4f0;
+      border-radius: 6px;
+      font-size: 0.88rem;
+      color: #1a1a2e;
+      background: #fafbfd;
+      margin-bottom: 10px;
+    }
+    .status-form select:focus, .status-form textarea:focus {
+      outline: none;
+      border-color: #1b3a6b;
+    }
+    .status-form textarea { resize: vertical; min-height: 60px; }
+    .btn {
+      background: #1b3a6b;
+      color: white;
+      border: none;
+      padding: 9px 20px;
+      border-radius: 6px;
+      font-size: 0.88rem;
+      font-weight: 600;
+      cursor: pointer;
+      width: 100%;
+      transition: background 0.15s;
+    }
+    .btn:hover { background: #16305a; }
+
+    /* ── GRID ── */
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    @media (max-width: 640px) { .grid { grid-template-columns: 1fr; } }
+
+    /* ── CARD ── */
+    .card {
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.07);
+      padding: 22px 24px;
+    }
+    .card.full { grid-column: 1 / -1; }
+    .card h3 {
+      font-size: 0.78rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+      color: #1b3a6b;
+      margin-bottom: 16px;
+      padding-bottom: 10px;
+      border-bottom: 1.5px solid #e8ecf4;
+    }
+
+    /* ── FIELDS ── */
+    .field { margin-bottom: 14px; }
+    .field:last-child { margin-bottom: 0; }
+    .field-label { font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.4px; color: #aaa; margin-bottom: 3px; }
+    .field-value { font-size: 0.92rem; color: #1a1a2e; line-height: 1.5; }
+    .field-value.empty { color: #ccc; font-style: italic; }
+
+    /* ── STATUS PILLS ── */
+    .status-pill {
+      display: inline-block;
+      padding: 4px 14px;
+      border-radius: 12px;
+      font-size: 0.82rem;
+      font-weight: 600;
+    }
+    .status-new                    { background: #fff3cd; color: #856404; }
+    .status-under_review           { background: #cce5ff; color: #004085; }
+    .status-consultation_scheduled { background: #d4edda; color: #155724; }
+    .status-retained               { background: #d1ecf1; color: #0c5460; }
+    .status-declined               { background: #f8d7da; color: #721c24; }
+    .status-closed                 { background: #e2e3e5; color: #495057; }
+
+    /* ── RAW TEXT TOGGLE ── */
+    .raw-toggle {
+      font-size: 0.82rem;
+      color: #1b3a6b;
+      cursor: pointer;
+      text-decoration: underline;
+      margin-top: 12px;
+      display: inline-block;
+    }
+    .raw-text {
+      display: none;
+      background: #f8f9fb;
+      border: 1px solid #e8ecf4;
+      border-radius: 6px;
+      padding: 14px;
+      font-size: 0.78rem;
+      font-family: monospace;
+      white-space: pre-wrap;
+      color: #555;
+      margin-top: 10px;
+      max-height: 300px;
+      overflow-y: auto;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <a href="/">← All Cases</a>
+  <span class="sep">/</span>
+  <h1>{{ case.case_number }}</h1>
+</header>
+
+<div class="container">
+
+  <!-- Top bar: IDs + status update -->
+  <div class="top-bar">
+    <div class="case-ids">
+      <h2>{{ case.client_name or 'Unknown Client' }}</h2>
+      <div class="matter">
+        Case: <strong>{{ case.case_number }}</strong> &nbsp;·&nbsp;
+        Matter: <strong>{{ case.client_matter_number }}</strong> &nbsp;·&nbsp;
+        <span class="status-pill status-{{ case.status }}">{{ case.status.replace('_', ' ') }}</span>
+      </div>
+    </div>
+
+    <form class="status-form" method="POST" action="/case/{{ case.case_number }}/status">
+      <label>Update Status</label>
+      <select name="status">
+        {% for s in statuses %}
+        <option value="{{ s }}" {% if case.status == s %}selected{% endif %}>
+          {{ s.replace('_', ' ').title() }}
+        </option>
+        {% endfor %}
+      </select>
+      <label>Notes (optional)</label>
+      <textarea name="notes" placeholder="Add a note...">{{ case.notes or '' }}</textarea>
+      <button class="btn" type="submit">Update</button>
+    </form>
+  </div>
+
+  <!-- Field grid -->
+  <div class="grid">
+
+    <!-- Client Info -->
+    <div class="card">
+      <h3>Client Information</h3>
+      {% for label, key in [
+        ('Full Name', 'client_name'),
+        ('Email', 'client_email'),
+        ('Phone', 'client_phone'),
+        ('Address', 'client_address'),
+      ] %}
+      <div class="field">
+        <div class="field-label">{{ label }}</div>
+        <div class="field-value {% if not case[key] %}empty{% endif %}">{{ case[key] or 'Not provided' }}</div>
+      </div>
+      {% endfor %}
+    </div>
+
+    <!-- Case Info -->
+    <div class="card">
+      <h3>Case Details</h3>
+      {% for label, key in [
+        ('Case Type', 'case_type'),
+        ('Incident Date', 'incident_date'),
+        ('Filing Date', 'filing_date'),
+        ('Injury Severity', 'injury_severity'),
+        ('Opposing Party', 'opposing_party'),
+        ('Opposing Counsel', 'opposing_counsel'),
+      ] %}
+      <div class="field">
+        <div class="field-label">{{ label }}</div>
+        <div class="field-value {% if not case[key] %}empty{% endif %}">{{ case[key] or 'Not provided' }}</div>
+      </div>
+      {% endfor %}
+    </div>
+
+    <!-- Incident Description -->
+    <div class="card full">
+      <h3>Incident Description</h3>
+      <div class="field-value {% if not case.incident_description %}empty{% endif %}">
+        {{ case.incident_description or 'No description provided' }}
+      </div>
+    </div>
+
+    <!-- Background Info -->
+    <div class="card">
+      <h3>Background</h3>
+      {% for label, key in [
+        ('Insurance Info', 'insurance_info'),
+        ('Employer', 'employer_info'),
+        ('Income Details', 'income_details'),
+        ('Prior Legal Rep', 'prior_legal_rep'),
+        ('Referral Source', 'referral_source'),
+      ] %}
+      <div class="field">
+        <div class="field-label">{{ label }}</div>
+        <div class="field-value {% if not case[key] %}empty{% endif %}">{{ case[key] or 'Not provided' }}</div>
+      </div>
+      {% endfor %}
+    </div>
+
+    <!-- Consent -->
+    <div class="card">
+      <h3>Consent & Signature</h3>
+      {% for label, key in [
+        ('Signature Present', 'signature_present'),
+        ('Consent Given', 'consent_given'),
+      ] %}
+      <div class="field">
+        <div class="field-label">{{ label }}</div>
+        <div class="field-value {% if not case[key] %}empty{% endif %}">{{ case[key] or 'Not provided' }}</div>
+      </div>
+      {% endfor %}
+      <div class="field" style="margin-top:20px; padding-top:16px; border-top:1px solid #f0f2f8;">
+        <div class="field-label">Source Email</div>
+        <div class="field-value" style="font-size:0.82rem; color:#888;">{{ case.source_email or '—' }}</div>
+      </div>
+      <div class="field">
+        <div class="field-label">Received</div>
+        <div class="field-value" style="font-size:0.82rem; color:#888;">{{ case.created_at[:19].replace('T', ' ') }}</div>
+      </div>
+    </div>
+
+    <!-- Raw PDF text (collapsible) -->
+    <div class="card full">
+      <h3>Raw Extracted Text</h3>
+      <span class="raw-toggle" onclick="toggleRaw(this)">Show raw PDF text</span>
+      <pre class="raw-text" id="rawText">{{ case.raw_pdf_text or '(none)' }}</pre>
+    </div>
+
+  </div>
+</div>
+
+<script>
+function toggleRaw(el) {
+  const pre = document.getElementById('rawText');
+  if (pre.style.display === 'block') {
+    pre.style.display = 'none';
+    el.textContent = 'Show raw PDF text';
+  } else {
+    pre.style.display = 'block';
+    el.textContent = 'Hide raw PDF text';
+  }
+}
+</script>
+</body>
+</html>
