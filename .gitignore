@@ -1,0 +1,48 @@
+# Environment & Secrets
+.env
+.env.*
+credentials.json
+token.json
+*.pem
+*.key
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+venv/
+env/
+.venv/
+*.egg-info/
+dist/
+build/
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# Flask
+instance/
+.webassets-cache
+flask_session/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Logs
+*.log
+logs/
+
+# Uploads / processed files
+uploads/
+processed/
